@@ -31,12 +31,13 @@ export function buildGround(scene) {
 export function generateTreeLayout() {
   const rand = mulberry32(FOREST_SEED);
   const trees = [];
-  const clearingRadius = 9;
-  const count = 220;
+  const clearingRadius = 9; // open camp area around the main fire
+  const count = 380; // denser forest
+  const minSpacing = 3.2; // tighter packing than before (was 4.5)
 
   let i = 0;
   let guard = 0;
-  while (i < count && guard < count * 20) {
+  while (i < count && guard < count * 30) {
     guard++;
     const x = (rand() - 0.5) * WORLD_SIZE * 0.95;
     const z = (rand() - 0.5) * WORLD_SIZE * 0.95;
@@ -47,7 +48,7 @@ export function generateTreeLayout() {
     for (const t of trees) {
       const dx = t.x - x;
       const dz = t.z - z;
-      if (dx * dx + dz * dz < 4.5 * 4.5) {
+      if (dx * dx + dz * dz < minSpacing * minSpacing) {
         tooClose = true;
         break;
       }
@@ -64,6 +65,19 @@ export function generateTreeLayout() {
     });
     i++;
   }
+
+  // Exactly one tree inside the main-camp clearing/safe zone — enough
+  // that a fresh player always has something to chop without leaving
+  // the light, but not so many that the clearing stops feeling open.
+  const angle = rand() * Math.PI * 2;
+  const r = 3 + rand() * (clearingRadius - 4); // keep clear of the fire itself
+  trees.push({
+    id: "t-safezone",
+    x: Math.cos(angle) * r,
+    z: Math.sin(angle) * r,
+    scale: 0.8 + rand() * 0.5,
+    hue: 0.3,
+  });
 
   return trees;
 }
