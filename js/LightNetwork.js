@@ -84,11 +84,17 @@ export class LightNetwork {
     }
   }
 
-  // A position is "safe" (lit + connected to the network) if it falls
-  // inside the radius of any connected, lit source.
+  // A position is "safe" if it's within range of any currently-lit fire.
+  // Note: this intentionally does NOT require the fire to be part of the
+  // "connected" chain back to the main fire. The connectivity graph is
+  // still computed below (and kept for possible future visual effects —
+  // e.g. dimming/greying out isolated fires), but gating protection on it
+  // meant a fire could render with full flame and light, sit right next
+  // to the player, and still deal zero protection with no visual cue —
+  // which reads as a bug, not a mechanic. Any burning fire now protects.
   isPositionLit(x, z) {
     for (const s of this.sources.values()) {
-      if (!s.connected || !s.lit) continue;
+      if (!s.lit) continue;
       if (dist2D(x, z, s.x, s.z) <= s.radius) return true;
     }
     return false;

@@ -201,7 +201,10 @@ function animate() {
     player.update(dt, { trees, lightNetwork });
 
     for (const t of trees) t.update(dt);
-    for (const f of campfires.values()) f.update(dt);
+    for (const [id, f] of campfires) {
+      f.update(dt);
+      if (id !== "main") lightNetwork.setLit(id, !f.out);
+    }
 
     // Position + animate remote avatars (positions arrive pre-smoothed
     // enough at 10/s for a small-scale forest game; swap in lerp here if

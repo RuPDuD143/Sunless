@@ -6,6 +6,7 @@
 import * as THREE from "three";
 import { Input, consumeMouseDelta } from "./Input.js";
 import { clamp } from "./utils.js";
+import { MAIN_FIRE_RADIUS } from "./LightNetwork.js";
 
 const MOVE_SPEED = 4.2;
 const SPRINT_MULT = 1.5;
@@ -17,13 +18,25 @@ const CHOP_COOLDOWN = 0.45;
 const CHOP_RANGE = 2.4;
 const PLAYER_RADIUS = 0.35;
 
+// Keeps a comfortable margin inside the main fire's actual radius so a
+// spawned/respawned player is never accidentally placed at the edge of
+// (or just outside) the light, regardless of future radius tuning.
+function randomSpawnNearMainFire() {
+  const angle = Math.random() * Math.PI * 2;
+  const r = Math.max(1, MAIN_FIRE_RADIUS - 1) * (0.4 + Math.random() * 0.5);
+  const x = Math.cos(angle) * r;
+  const z = Math.sin(angle) * r;
+  return { x, z, yaw: Math.atan2(x, z) }; // yaw faces back toward the fire
+}
+
 export class Player {
   constructor(camera, scene) {
     this.camera = camera;
     this.scene = scene;
 
-    this.position = new THREE.Vector3(0, 0, 6);
-    this.yaw = Math.PI; // facing toward the main campfire at origin
+    const spawn = randomSpawnNearMainFire();
+    this.position = new THREE.Vector3(spawn.x, 0, spawn.z);
+    this.yaw = spawn.yaw;
     this.pitch = 0;
 
     this.health = MAX_HEALTH;
@@ -96,8 +109,9 @@ export class Player {
   respawn() {
     this.health = MAX_HEALTH;
     this.alive = true;
-    this.position.set(0, 0, 6 + Math.random() * 2);
-    this.yaw = Math.PI;
+    const spawn = randomSpawnNearMainFire();
+    this.position.set(spawn.x, 0, spawn.z);
+    this.yaw = spawn.yaw;
     this.pitch = 0;
   }
 
