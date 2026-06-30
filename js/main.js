@@ -110,6 +110,7 @@ const nameInput = document.getElementById("name-input");
 const playBtn = document.getElementById("play-btn");
 
 let gameStarted = false;
+let isBlind = false;
 
 playBtn.addEventListener("click", async () => {
   myName = (nameInput.value || "Wanderer").trim().slice(0, 16) || "Wanderer";
@@ -233,10 +234,38 @@ function animate() {
       setInteractPrompt(null);
     }
 
+    // --- Visibility: only the fire cluster the player is currently
+    // standing inside (and anything within reach of it) gets drawn. A
+    // fire that's lit but unconnected to that cluster — even the eternal
+    // main fire — is hidden entirely. Standing in no fire's radius at
+    // all means an empty cluster: total blackout, handled below.
+    const myCluster = lightNetwork.getClusterContaining(player.position.x, player.position.z);
+    isBlind = myCluster.size === 0;
+
+    for (const [id, f] of campfires) {
+      f.group.visible = myCluster.has(id);
+    }
+    for (const t of trees) {
+      t.group.visible = lightNetwork.isVisibleInCluster(t.x, t.z, myCluster);
+    }
+    for (const av of remoteAvatars.values()) {
+      if (av.targetPos) {
+        av.root.visible = lightNetwork.isVisibleInCluster(av.targetPos.x, av.targetPos.z, myCluster);
+      }
+    }
+
     updateHUD(player);
   }
 
-  renderer.render(scene, camera);
+  if (isBlind) {
+    // Total blackout — skip drawing the scene entirely rather than rely
+    // on lighting alone, so nothing (not even a stray frame of geometry)
+    // is visible while the player is standing in true darkness.
+    renderer.setClearColor(0x000000, 1);
+    renderer.clear();
+  } else {
+    renderer.render(scene, camera);
+  }
 }
 
 animate();

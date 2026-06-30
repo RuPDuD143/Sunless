@@ -29,15 +29,11 @@ export function createSceneSetup() {
   );
   camera.position.set(0, 1.7, 4);
 
-  // Extremely dim ambient so the world isn't pure black where no fire
-  // reaches, while still feeling dangerous and unlit.
-  const ambient = new THREE.AmbientLight(0x1a2233, 0.18);
-  scene.add(ambient);
-
-  // Faint moon-ish directional light, mostly to give silhouettes.
-  const moon = new THREE.DirectionalLight(0x445577, 0.12);
-  moon.position.set(-30, 40, -20);
-  scene.add(moon);
+  // No ambient or moon light on purpose: outside a fire's actual light
+  // reach, surfaces should receive zero light and render pure black
+  // (indistinguishable from the background/fog), not a faint visible
+  // silhouette. Visibility is controlled entirely by which fires the
+  // player can currently see — see LightNetwork + main.js's render loop.
 
   window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
