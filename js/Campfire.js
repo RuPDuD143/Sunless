@@ -1,7 +1,7 @@
 // js/Campfire.js
 // Visual + lifespan logic for a single campfire. The MAIN campfire is
 // eternal (infinite fuel). Player-built campfires start with a 10-minute
-// lifespan (granted by the 10-log build cost) and gain +45s per extra log.
+// lifespan (granted by the 12-log build cost) and gain +45s per extra log.
 
 import * as THREE from "three";
 import { MAIN_FIRE_RADIUS } from "./LightNetwork.js";
@@ -9,6 +9,7 @@ import { MAIN_FIRE_RADIUS } from "./LightNetwork.js";
 const PLAYER_FIRE_BASE_SECONDS = 10 * 60;
 const SECONDS_PER_LOG = 45;
 const PLAYER_FIRE_RADIUS = MAIN_FIRE_RADIUS; // "same power as main campfire"
+const IGNITE_RAMP_SECONDS = 0.5; // newly-placed fires brighten in over this long
 
 export class Campfire {
   constructor(scene, { id, x, z, isMain = false }) {
@@ -53,6 +54,7 @@ export class Campfire {
 
     scene.add(this.group);
     this._t = Math.random() * 10;
+    this._age = 0;
   }
 
   addLog() {
@@ -62,10 +64,12 @@ export class Campfire {
 
   update(dt) {
     this._t += dt;
+    this._age += dt;
     // Gentle flicker.
     const flicker = 0.85 + Math.sin(this._t * 13) * 0.08 + Math.sin(this._t * 4.3) * 0.05;
-    this.light.intensity = (this.isMain ? 3.2 : 2.6) * (this.out ? 0 : flicker);
-    this.flame.scale.setScalar(this.out ? 0.0001 : flicker);
+    const ignite = Math.min(1, this._age / IGNITE_RAMP_SECONDS);
+    this.light.intensity = (this.isMain ? 3.2 : 2.6) * (this.out ? 0 : flicker) * ignite;
+    this.flame.scale.setScalar(this.out ? 0.0001 : flicker * ignite);
 
     if (!this.isMain && !this.out) {
       this.fuelSeconds -= dt;

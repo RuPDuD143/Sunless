@@ -14,6 +14,8 @@ const LOOK_SENSITIVITY = 0.0022;
 const MAX_HEALTH = 100;
 const DARKNESS_DPS = 6; // damage per second while unlit
 const LIGHT_REGEN_PS = 3; // slow regen while safely lit
+const PAIN_FLASH_RISE_SECONDS = 0.8; // sustained damage ramps the red edges to full over this long
+const PAIN_FLASH_DECAY_SECONDS = 0.65; // and fades them out over this long once safe
 const CHOP_COOLDOWN = 0.45;
 const CHOP_RANGE = 2.4;
 const PLAYER_RADIUS = 0.35;
@@ -42,6 +44,7 @@ export class Player {
     this.health = MAX_HEALTH;
     this.alive = true;
     this.inDarkness = false;
+    this.painFlash = 0; // 0..1, drives the red damage-edge vignette
 
     this.inventory = { logs: 0 };
 
@@ -109,6 +112,7 @@ export class Player {
   respawn() {
     this.health = MAX_HEALTH;
     this.alive = true;
+    this.painFlash = 0;
     const spawn = randomSpawnNearMainFire();
     this.position.set(spawn.x, 0, spawn.z);
     this.yaw = spawn.yaw;
@@ -203,8 +207,12 @@ export class Player {
       this.inDarkness = !lightNetwork.isPositionLit(this.position.x, this.position.z);
       if (this.inDarkness) {
         this.takeDamage(DARKNESS_DPS * dt);
-      } else if (this.health < MAX_HEALTH) {
-        this.health = clamp(this.health + LIGHT_REGEN_PS * dt, 0, MAX_HEALTH);
+        this.painFlash = Math.min(1, this.painFlash + dt / PAIN_FLASH_RISE_SECONDS);
+      } else {
+        if (this.health < MAX_HEALTH) {
+          this.health = clamp(this.health + LIGHT_REGEN_PS * dt, 0, MAX_HEALTH);
+        }
+        this.painFlash = Math.max(0, this.painFlash - dt / PAIN_FLASH_DECAY_SECONDS);
       }
     }
 

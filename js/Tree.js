@@ -7,6 +7,7 @@ import * as THREE from "three";
 const CHOPS_TO_FELL = 4; // lvl0 axe hits needed
 const LOGS_PER_TREE = 3;
 const RESPAWN_SECONDS = 90;
+const FLASH_DURATION = 0.4; // white "purified from darkness" flash on reveal
 
 export class Tree {
   constructor(scene, data) {
@@ -18,13 +19,19 @@ export class Tree {
     this.chops = 0;
     this.felled = false;
     this.respawnTimer = 0;
+    this.flashT = 0; // counts down from FLASH_DURATION when triggered
 
     this.group = new THREE.Group();
     this.group.position.set(this.x, 0, this.z);
     this.group.scale.setScalar(this.scale);
 
     const trunkGeo = new THREE.CylinderGeometry(0.18, 0.24, 2.2, 7);
-    const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3322, roughness: 1 });
+    const trunkMat = new THREE.MeshStandardMaterial({
+      color: 0x4a3322,
+      roughness: 1,
+      emissive: 0xffffff,
+      emissiveIntensity: 0,
+    });
     this.trunk = new THREE.Mesh(trunkGeo, trunkMat);
     this.trunk.position.y = 1.1;
     this.trunk.castShadow = true;
@@ -32,7 +39,12 @@ export class Tree {
     this.group.add(this.trunk);
 
     const leafGeo = new THREE.ConeGeometry(1.3, 2.6, 8);
-    const leafMat = new THREE.MeshStandardMaterial({ color: 0x2d6a2d, roughness: 1 });
+    const leafMat = new THREE.MeshStandardMaterial({
+      color: 0x2d6a2d,
+      roughness: 1,
+      emissive: 0xffffff,
+      emissiveIntensity: 0,
+    });
     this.leaves = new THREE.Mesh(leafGeo, leafMat);
     this.leaves.position.y = 3.0;
     this.leaves.castShadow = true;
@@ -82,6 +94,13 @@ export class Tree {
     }
   }
 
+  // Called by main.js when this tree transitions from hidden to visible
+  // (i.e. a fire's light just reached it) — briefly tints it white then
+  // fades back to normal, like it's being "purified" out of the dark.
+  triggerFlash() {
+    this.flashT = FLASH_DURATION;
+  }
+
   update(dt) {
     if (this.felled) {
       this.respawnTimer -= dt;
@@ -92,6 +111,13 @@ export class Tree {
         this.leaves.visible = true;
         this.stump.visible = false;
       }
+    }
+
+    if (this.flashT > 0) {
+      this.flashT = Math.max(0, this.flashT - dt);
+      const intensity = this.flashT / FLASH_DURATION;
+      this.trunk.material.emissiveIntensity = intensity;
+      this.leaves.material.emissiveIntensity = intensity;
     }
   }
 

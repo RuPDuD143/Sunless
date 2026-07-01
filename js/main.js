@@ -13,7 +13,7 @@ import { Player } from "./Player.js";
 import { LightNetwork } from "./LightNetwork.js";
 import { Campfire } from "./Campfire.js";
 import { initInput, onClick, onInteract } from "./Input.js";
-import { updateHUD, setInteractPrompt } from "./HUD.js";
+import { updateHUD, setInteractPrompt, setBlindAmount } from "./HUD.js";
 import { initCrafting } from "./Crafting.js";
 import { uid as makeId } from "./utils.js";
 import {
@@ -111,6 +111,8 @@ const playBtn = document.getElementById("play-btn");
 
 let gameStarted = false;
 let isBlind = false;
+let blindAmount = 0; // smoothed 0..1, eased toward isBlind each frame
+const BLIND_TRANSITION_SECONDS = 0.7;
 
 playBtn.addEventListener("click", async () => {
   myName = (nameInput.value || "Wanderer").trim().slice(0, 16) || "Wanderer";
@@ -242,11 +244,26 @@ function animate() {
     const myCluster = lightNetwork.getClusterContaining(player.position.x, player.position.z);
     isBlind = myCluster.size === 0;
 
+    const blindTarget = isBlind ? 1 : 0;
+    const blindStep = dt / BLIND_TRANSITION_SECONDS;
+    blindAmount =
+      blindAmount < blindTarget
+        ? Math.min(blindTarget, blindAmount + blindStep)
+        : Math.max(blindTarget, blindAmount - blindStep);
+    setBlindAmount(blindAmount);
+
     for (const [id, f] of campfires) {
       f.group.visible = myCluster.has(id);
     }
     for (const t of trees) {
-      t.group.visible = lightNetwork.isVisibleInCluster(t.x, t.z, myCluster);
+      const visibleNow = lightNetwork.isVisibleInCluster(t.x, t.z, myCluster);
+      if (t._wasVisible === undefined) {
+        t._wasVisible = visibleNow; // baseline on first frame — no flash at boot
+      } else if (visibleNow && !t._wasVisible) {
+        t.triggerFlash();
+      }
+      t._wasVisible = visibleNow;
+      t.group.visible = visibleNow;
     }
     for (const av of remoteAvatars.values()) {
       if (av.targetPos) {
@@ -257,15 +274,7 @@ function animate() {
     updateHUD(player);
   }
 
-  if (isBlind) {
-    // Total blackout — skip drawing the scene entirely rather than rely
-    // on lighting alone, so nothing (not even a stray frame of geometry)
-    // is visible while the player is standing in true darkness.
-    renderer.setClearColor(0x000000, 1);
-    renderer.clear();
-  } else {
-    renderer.render(scene, camera);
-  }
+  renderer.render(scene, camera);
 }
 
 animate();

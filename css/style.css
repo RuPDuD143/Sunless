@@ -99,6 +99,24 @@ html, body {
 }
 #vignette-dark.active { opacity: 1; }
 
+/* Full darkness "iris" — background is set every frame from JS as a
+   radial-gradient whose clear circle smoothly shrinks/grows, so entering
+   true darkness closes in like a vision circle instead of cutting to
+   black instantly. */
+#blackout-iris {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at center, transparent 150%, #000 150%);
+}
+
+/* Red "pain" edges — opacity is driven every frame from JS based on the
+   player's current pain-flash value, ramping up while taking damage and
+   fading out once safe. */
+#pain-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at center, rgba(140,0,0,0) 45%, rgba(160,0,0,0.65) 100%);
+  opacity: 0;
+}
+
 #top-left-hud {
   position: absolute; top: 20px; left: 20px;
   display: flex; flex-direction: column; gap: 6px;
