@@ -17,7 +17,7 @@
 
 import { dist2D } from "./utils.js";
 
-const MAIN_FIRE_DIAMETER = 6; // meters (doubled per feedback — was 3m)
+const MAIN_FIRE_DIAMETER = 12; // meters (doubled again per feedback — was 6m)
 export const MAIN_FIRE_RADIUS = MAIN_FIRE_DIAMETER / 2;
 
 export class LightNetwork {
