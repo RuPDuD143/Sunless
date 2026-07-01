@@ -1,0 +1,264 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: #05080a;
+  font-family: 'Inter', sans-serif;
+  color: #f0e6d2;
+}
+
+#game-canvas {
+  position: fixed;
+  inset: 0;
+  display: block;
+}
+
+.hidden { display: none !important; }
+
+/* ===== Menu ===== */
+#menu-overlay {
+  position: fixed; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(circle at 50% 60%, #2a1a0d 0%, #0a0805 55%, #020202 100%);
+  z-index: 50;
+}
+#menu-card {
+  text-align: center;
+  padding: 48px 56px;
+  border: 1px solid rgba(255, 170, 60, 0.25);
+  background: rgba(10, 8, 6, 0.6);
+  border-radius: 4px;
+  box-shadow: 0 0 80px rgba(255, 140, 30, 0.08);
+}
+#menu-card h1 {
+  font-family: 'Cinzel', serif;
+  font-size: 2.6rem;
+  letter-spacing: 0.08em;
+  color: #ffd9a0;
+  text-shadow: 0 0 18px rgba(255, 150, 40, 0.5);
+}
+#menu-card h1 span { color: #ff8a3d; }
+.menu-sub {
+  margin-top: 10px;
+  color: #b8a98c;
+  font-style: italic;
+  font-size: 0.95rem;
+}
+#name-input {
+  margin-top: 28px;
+  width: 260px;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255, 170, 60, 0.3);
+  color: #f0e6d2;
+  font-size: 1rem;
+  border-radius: 3px;
+  text-align: center;
+}
+#name-input:focus { outline: none; border-color: #ff8a3d; }
+#play-btn {
+  display: block;
+  margin: 18px auto 0;
+  padding: 12px 36px;
+  background: linear-gradient(180deg, #ff9a45, #d9650e);
+  color: #1a0e02;
+  font-weight: 600;
+  font-size: 1rem;
+  border: none;
+  border-radius: 3px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  box-shadow: 0 4px 16px rgba(255, 120, 20, 0.35);
+}
+#play-btn:hover { filter: brightness(1.1); }
+.menu-hint {
+  margin-top: 22px;
+  font-size: 0.75rem;
+  color: #6e6253;
+  letter-spacing: 0.02em;
+}
+
+/* ===== HUD ===== */
+#hud { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+
+#crosshair {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  color: rgba(255,255,255,0.75);
+  font-size: 1.1rem;
+}
+
+#vignette-dark {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at center, rgba(0,0,0,0) 35%, rgba(0,0,0,0.55) 100%);
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+#vignette-dark.active { opacity: 1; }
+
+/* Full darkness "iris" — background is set every frame from JS as a
+   radial-gradient whose clear circle smoothly shrinks/grows, so entering
+   true darkness closes in like a vision circle instead of cutting to
+   black instantly. */
+#blackout-iris {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at center, transparent 150%, #000 150%);
+}
+
+/* Red "pain" edges — opacity is driven every frame from JS based on the
+   player's current pain-flash value, ramping up while taking damage and
+   fading out once safe. */
+#pain-vignette {
+  position: absolute; inset: 0;
+  background: radial-gradient(circle at center, rgba(140,0,0,0) 45%, rgba(160,0,0,0.65) 100%);
+  opacity: 0;
+}
+
+#top-left-hud {
+  position: absolute; top: 20px; left: 20px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+#health-bar-wrap {
+  width: 220px; height: 22px;
+  background: rgba(0,0,0,0.5);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 3px;
+  position: relative;
+  overflow: hidden;
+}
+#health-bar-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ff5b3d, #ff9a45);
+  transition: width 0.25s ease;
+}
+#health-text {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.75rem; font-weight: 600;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+#darkness-warning {
+  background: rgba(120, 0, 0, 0.55);
+  border: 1px solid rgba(255,80,80,0.4);
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  border-radius: 2px;
+  animation: pulse-warn 1s infinite;
+}
+@keyframes pulse-warn {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+
+#inventory-bar {
+  position: absolute; bottom: 24px; left: 50%;
+  transform: translateX(-50%);
+  display: flex; gap: 10px;
+  pointer-events: auto;
+}
+.inv-slot {
+  width: 56px; height: 56px;
+  background: rgba(10,8,6,0.6);
+  border: 1px solid rgba(255,170,60,0.3);
+  border-radius: 4px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative;
+}
+.inv-icon { font-size: 1.4rem; }
+.inv-count {
+  position: absolute; bottom: 2px; right: 5px;
+  font-size: 0.7rem; font-weight: 600;
+  text-shadow: 0 1px 2px black;
+}
+
+#craft-toggle-btn {
+  position: absolute; bottom: 24px; right: 24px;
+  pointer-events: auto;
+  padding: 10px 18px;
+  background: rgba(10,8,6,0.7);
+  border: 1px solid rgba(255,170,60,0.35);
+  color: #ffd9a0;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#craft-toggle-btn:hover { background: rgba(40,24,10,0.8); }
+
+#craft-panel {
+  position: absolute; bottom: 90px; right: 24px;
+  width: 260px;
+  pointer-events: auto;
+  background: rgba(8,6,5,0.85);
+  border: 1px solid rgba(255,170,60,0.3);
+  border-radius: 6px;
+  padding: 16px;
+}
+#craft-panel h2 {
+  font-family: 'Cinzel', serif;
+  font-size: 1.1rem;
+  color: #ffd9a0;
+  margin-bottom: 10px;
+}
+.craft-recipe {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.04);
+  padding: 8px;
+  border-radius: 4px;
+}
+.recipe-icon { font-size: 1.6rem; }
+.recipe-info { flex: 1; }
+.recipe-name { font-weight: 600; font-size: 0.9rem; }
+.recipe-cost { font-size: 0.75rem; color: #b8a98c; }
+.recipe-btn {
+  padding: 6px 12px;
+  background: linear-gradient(180deg, #ff9a45, #d9650e);
+  border: none; border-radius: 3px;
+  font-weight: 600; cursor: pointer;
+  color: #1a0e02;
+  font-size: 0.78rem;
+}
+.recipe-btn:disabled {
+  background: #4a4136;
+  color: #8a8174;
+  cursor: not-allowed;
+}
+.craft-tip {
+  margin-top: 10px;
+  font-size: 0.7rem;
+  color: #897c68;
+  line-height: 1.4;
+}
+
+#interact-prompt {
+  position: absolute; bottom: 110px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.6);
+  padding: 6px 14px;
+  border-radius: 3px;
+  font-size: 0.8rem;
+}
+
+#death-screen {
+  position: absolute; inset: 0;
+  background: rgba(5,2,1,0.9);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px;
+  pointer-events: auto;
+}
+#death-screen h1 {
+  font-family: 'Cinzel', serif;
+  color: #ff5b3d;
+  letter-spacing: 0.05em;
+}
+#respawn-btn {
+  padding: 12px 30px;
+  background: linear-gradient(180deg, #ff9a45, #d9650e);
+  border: none; border-radius: 3px;
+  font-weight: 600; cursor: pointer;
+  color: #1a0e02;
+}
