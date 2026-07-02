@@ -49,7 +49,16 @@ export class Campfire {
 
     this.light = new THREE.PointLight(0xff9a45, isMain ? 3.2 : 2.6, this.radius * 2.6, 1.8);
     this.light.position.y = 0.6;
-    this.light.castShadow = true;
+    // Shadow-casting is expensive for point lights (6-face cubemap render
+    // per light, per frame) so it's OFF by default here and only turned on
+    // for a small, distance-based subset of fires — see the
+    // MAX_SHADOW_CASTERS logic in main.js's animate loop, which calls
+    // setShadowCaster() each frame.
+    this.light.castShadow = false;
+    this.light.shadow.mapSize.set(256, 256);
+    this.light.shadow.camera.near = 0.2;
+    this.light.shadow.camera.far = this.radius * 2.6;
+    this.light.shadow.bias = -0.002;
     this.group.add(this.light);
 
     scene.add(this.group);
@@ -78,6 +87,12 @@ export class Campfire {
         this.out = true;
       }
     }
+  }
+
+  // Turns this fire's dynamic shadow on/off. Cheap to call every frame —
+  // three.js just skips the shadow-map render pass for this light when off.
+  setShadowCaster(enabled) {
+    this.light.castShadow = enabled;
   }
 
   distanceTo(x, z) {

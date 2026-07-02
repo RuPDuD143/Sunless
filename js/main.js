@@ -36,6 +36,12 @@ const treeLayout = generateTreeLayout();
 const trees = treeLayout.map((d) => new Tree(scene, d));
 const treesById = new Map(trees.map((t) => [t.id, t]));
 
+// Only this many fires get a real-time shadow at once — point light
+// shadows are a 6-face cubemap render each, so this is the main lever for
+// keeping clusters of campfires from tanking the framerate. The rest still
+// light the scene normally, they just don't cast shadows.
+const MAX_SHADOW_CASTERS = 2;
+
 const lightNetwork = new LightNetwork();
 const mainFire = new Campfire(scene, { id: "main", x: 0, z: 0, isMain: true });
 const campfires = new Map([["main", mainFire]]);
@@ -255,6 +261,22 @@ function animate() {
     for (const [id, f] of campfires) {
       f.group.visible = myCluster.has(id);
     }
+
+    // Of the currently-visible fires, only let the nearest MAX_SHADOW_CASTERS
+    // to the player actually cast a shadow. Everything else still lights the
+    // scene, it just skips the expensive cubemap shadow render.
+    const visibleFires = [];
+    for (const [id, f] of campfires) {
+      if (!f.group.visible) continue;
+      visibleFires.push(f);
+    }
+    visibleFires.sort(
+      (a, b) =>
+        a.distanceTo(player.position.x, player.position.z) -
+        b.distanceTo(player.position.x, player.position.z)
+    );
+    visibleFires.forEach((f, i) => f.setShadowCaster(i < MAX_SHADOW_CASTERS));
+
     for (const t of trees) {
       const visibleNow = lightNetwork.isVisibleInCluster(t.x, t.z, myCluster);
       if (t._wasVisible === undefined) {
