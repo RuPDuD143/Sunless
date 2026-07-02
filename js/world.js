@@ -79,8 +79,8 @@ export function generateTreeLayout() {
     const r = innerMargin + rand() * (outerMargin - innerMargin);
     trees.push({
       id: "t-safezone-" + g,
-      x: Math.cos(angle) * 0, // (* r)
-      z: Math.sin(angle) * 0,
+      x: Math.cos(angle) * 0.5, // (* r)
+      z: Math.sin(angle) * 0.5,
       scale: 0.8 + rand() * 0.5,
       hue: 0.3,
     });
