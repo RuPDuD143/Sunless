@@ -3,7 +3,7 @@
 // spawn a campfire" logic lives in the onCraftCampfire callback supplied
 // by main.js, which has access to the player/world state.
 
-const CAMPFIRE_COST = 12; // 4 trees * 3 logs/tree — craftable from one tree run
+const CAMPFIRE_COST = 10;
 
 export function initCrafting({ getLogs, onCraftCampfire }) {
   const toggleBtn = document.getElementById("craft-toggle-btn");

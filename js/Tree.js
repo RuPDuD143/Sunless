@@ -6,7 +6,7 @@ import * as THREE from "three";
 
 const CHOPS_TO_FELL = 4; // lvl0 axe hits needed
 const LOGS_PER_TREE = 3;
-const RESPAWN_SECONDS = 90;
+const RESPAWN_SECONDS = 5 * 60; // 5 minutes
 const FLASH_DURATION = 0.4; // white "purified from darkness" flash on reveal
 
 export class Tree {
@@ -18,7 +18,7 @@ export class Tree {
 
     this.chops = 0;
     this.felled = false;
-    this.respawnTimer = 0;
+    this.respawnAt = 0; // epoch ms when a felled tree regrows; 0 while standing
     this.flashT = 0; // counts down from FLASH_DURATION when triggered
 
     this.group = new THREE.Group();
@@ -62,35 +62,54 @@ export class Tree {
 
   // Called by a player swinging a lvl0 axe (which never breaks/depletes).
   chop() {
-    if (this.felled) return { felled: false, logs: 0 };
+    if (this.felled) return { felled: false, logs: 0, respawnAt: 0 };
     this.chops++;
     if (this.chops >= CHOPS_TO_FELL) {
-      this.fell();
-      return { felled: true, logs: LOGS_PER_TREE };
+      const respawnAt = Date.now() + RESPAWN_SECONDS * 1000;
+      this.fell(respawnAt);
+      return { felled: true, logs: LOGS_PER_TREE, respawnAt };
     }
-    return { felled: false, logs: 0 };
+    return { felled: false, logs: 0, respawnAt: 0 };
   }
 
-  fell() {
+  fell(respawnAt) {
     this.felled = true;
+    this.respawnAt = respawnAt;
     this.trunk.visible = false;
     this.leaves.visible = false;
     this.stump.visible = true;
-    this.respawnTimer = RESPAWN_SECONDS;
+  }
+
+  regrow() {
+    this.felled = false;
+    this.chops = 0;
+    this.respawnAt = 0;
+    this.trunk.visible = true;
+    this.leaves.visible = true;
+    this.stump.visible = false;
   }
 
   // Apply remote state without re-running chop logic locally (used when
-  // syncing from Firebase so we don't double-count hits).
-  applyRemoteState(chops, felled) {
+  // syncing from Firebase so we don't double-count hits). respawnAt is
+  // the authoritative wall-clock timestamp everyone regrows against, so
+  // every client reaches the same felled/standing conclusion regardless
+  // of frame rate, tab visibility, or when they joined.
+  applyRemoteState(chops, felled, respawnAt) {
     this.chops = chops;
+    this.respawnAt = respawnAt || 0;
     if (felled && !this.felled) {
-      this.fell();
+      this.felled = true;
+      this.trunk.visible = false;
+      this.leaves.visible = false;
+      this.stump.visible = true;
     } else if (!felled && this.felled) {
-      this.felled = false;
-      this.chops = 0;
-      this.trunk.visible = true;
-      this.leaves.visible = true;
-      this.stump.visible = false;
+      this.regrow();
+    }
+    // If the remote copy is already past its respawn time (we joined late,
+    // or missed the window while our tab was hidden), settle straight
+    // into the regrown state instead of showing a stale felled tree.
+    if (this.felled && this.respawnAt && Date.now() >= this.respawnAt) {
+      this.regrow();
     }
   }
 
@@ -102,15 +121,12 @@ export class Tree {
   }
 
   update(dt) {
-    if (this.felled) {
-      this.respawnTimer -= dt;
-      if (this.respawnTimer <= 0) {
-        this.felled = false;
-        this.chops = 0;
-        this.trunk.visible = true;
-        this.leaves.visible = true;
-        this.stump.visible = false;
-      }
+    // Wall-clock comparison instead of a decremented timer — stays correct
+    // even if this tab was hidden/throttled the whole time, and matches
+    // what every other client independently computes from the same
+    // synced respawnAt.
+    if (this.felled && this.respawnAt && Date.now() >= this.respawnAt) {
+      this.regrow();
     }
 
     if (this.flashT > 0) {

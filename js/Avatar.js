@@ -34,7 +34,7 @@ export class Avatar {
     const faceMat = new THREE.MeshStandardMaterial({ color: 0x3a2a20 });
     const eyeGeo = new THREE.BoxGeometry(0.06, 0.06, 0.02);
     const eyeL = new THREE.Mesh(eyeGeo, faceMat);
-    eyeL.position.set(-0.1, 0.25, 0.23);
+    eyeL.position.set(-0.1, 0.25, -0.23);
     const eyeR = eyeL.clone();
     eyeR.position.x = 0.1;
     this.headPivot.add(eyeL, eyeR);

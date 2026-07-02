@@ -6,6 +6,7 @@
 
 import * as THREE from "three";
 import { mulberry32 } from "./utils.js";
+import { MAIN_FIRE_RADIUS } from "./LightNetwork.js";
 
 export const WORLD_SIZE = 160; // ground is WORLD_SIZE x WORLD_SIZE
 export const FOREST_SEED = 1337; // change to regenerate a different forest
@@ -66,18 +67,24 @@ export function generateTreeLayout() {
     i++;
   }
 
-  // Exactly one tree inside the main-camp clearing/safe zone — enough
-  // that a fresh player always has something to chop without leaving
-  // the light, but not so many that the clearing stops feeling open.
-  const angle = rand() * Math.PI * 2;
-  const r = 3 + rand() * (clearingRadius - 4); // keep clear of the fire itself
-  trees.push({
-    id: "t-safezone",
-    x: Math.cos(angle) * r,
-    z: Math.sin(angle) * r,
-    scale: 0.8 + rand() * 0.5,
-    hue: 0.3,
-  });
+  // Exactly four trees guaranteed inside the main campfire's actual light
+  // radius, so they're visible and choppable the moment a fresh player
+  // spawns. Every other forest tree is kept out past the clearing, so
+  // it exists in the dark but stays unseen until a fire's light reaches it.
+  const guaranteedCount = 4;
+  const innerMargin = 2.5; // stay clear of the fire's own mesh
+  const outerMargin = MAIN_FIRE_RADIUS - 1; // stay safely inside the lit radius
+  for (let g = 0; g < guaranteedCount; g++) {
+    const angle = ((Math.PI * 2) / guaranteedCount) * g + rand() * 0.6;
+    const r = innerMargin + rand() * (outerMargin - innerMargin);
+    trees.push({
+      id: "t-safezone-" + g,
+      x: Math.cos(angle) * r,
+      z: Math.sin(angle) * r,
+      scale: 0.8 + rand() * 0.5,
+      hue: 0.3,
+    });
+  }
 
   return trees;
 }

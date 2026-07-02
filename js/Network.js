@@ -65,8 +65,8 @@ export function onPlayersUpdate(callback) {
 
 // ---------- Trees ----------
 
-export function syncTreeChop(treeId, chops, felled) {
-  update(ref(db, `world/trees/${treeId}`), { chops, felled });
+export function syncTreeChop(treeId, chops, felled, respawnAt) {
+  update(ref(db, `world/trees/${treeId}`), { chops, felled, respawnAt: respawnAt || null });
 }
 
 export function onTreesUpdate(callback) {

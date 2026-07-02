@@ -95,7 +95,7 @@ onClick(() => {
   if (result.felled) {
     player.inventory.logs += result.logs;
   }
-  syncTreeChop(tree.id, tree.chops, tree.felled);
+  syncTreeChop(tree.id, tree.chops, tree.felled, tree.respawnAt);
 });
 
 document.getElementById("respawn-btn").addEventListener("click", () => {
@@ -171,7 +171,7 @@ async function bootNetworking() {
   onTreesUpdate((data) => {
     for (const [id, t] of Object.entries(data)) {
       const tree = treesById.get(id);
-      if (tree) tree.applyRemoteState(t.chops || 0, !!t.felled);
+      if (tree) tree.applyRemoteState(t.chops || 0, !!t.felled, t.respawnAt || 0);
     }
   });
 

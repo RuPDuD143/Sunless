@@ -63,48 +63,40 @@ export class Player {
     arm.rotation.x = 0.4;
     this.armGroup.add(arm);
 
-    const handleMat = new THREE.MeshStandardMaterial({ color: 0x6b4a2a, roughness: 1 });
-    const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.03, 0.55, 6), handleMat);
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0x7a5230, roughness: 0.9 });
+    const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.6, 0.05), handleMat);
     handle.position.set(0.32, -0.66, -0.85);
     handle.rotation.x = 1.1;
     this.armGroup.add(handle);
 
-    // Axe head: a wedge-shaped blade (extruded 2D outline) plus a small
-    // dark socket box where it grips the handle, so it actually reads as
-    // an axe instead of a flat plank.
-    const bladeShape = new THREE.Shape();
-    bladeShape.moveTo(0, -0.06);
-    bladeShape.lineTo(0.05, -0.02);
-    bladeShape.lineTo(0.22, 0.06);
-    bladeShape.lineTo(0.27, 0.2);
-    bladeShape.lineTo(0.16, 0.3);
-    bladeShape.lineTo(0.02, 0.18);
-    bladeShape.lineTo(0, 0.05);
-    bladeShape.closePath();
-    const bladeGeo = new THREE.ExtrudeGeometry(bladeShape, {
-      depth: 0.035,
-      bevelEnabled: true,
-      bevelThickness: 0.006,
-      bevelSize: 0.006,
-      bevelSegments: 1,
-    });
-    bladeGeo.center();
+    // Axe head: a dark socket block where it grips the handle, plus a
+    // blade made of two adjoining slabs that flare wider as they move
+    // away from the socket — a simple blocky "hatchet" silhouette that
+    // reads clearly from any angle, matching the low-poly box style used
+    // everywhere else (avatar heads, torsos, etc.).
+    const axeHead = new THREE.Group();
+    axeHead.position.set(0.32, -0.42, -1.08);
+    axeHead.rotation.set(1.1, 0, 0.15);
+    this.armGroup.add(axeHead);
+
+    const socketMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2e, roughness: 0.6 });
+    const socket = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.16, 0.08), socketMat);
+    axeHead.add(socket);
+
     const bladeMat = new THREE.MeshStandardMaterial({
       color: 0xc7c7cf,
       metalness: 0.75,
       roughness: 0.3,
     });
-    const blade = new THREE.Mesh(bladeGeo, bladeMat);
-    blade.position.set(0.32, -0.42, -1.08);
-    blade.rotation.set(1.1, 0, 0.15);
+    const bladeInner = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.16), bladeMat);
+    bladeInner.position.set(0, 0, 0.14);
+    axeHead.add(bladeInner);
 
-    const socketMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2e, roughness: 0.6 });
-    const socket = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.05), socketMat);
-    socket.position.set(0.32, -0.5, -1.0);
-    socket.rotation.x = 1.1;
+    const bladeOuter = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.03, 0.26), bladeMat);
+    bladeOuter.position.set(0, 0, 0.29);
+    axeHead.add(bladeOuter);
 
-    this.armGroup.add(socket, blade);
-    this.axeMesh = blade;
+    this.axeMesh = axeHead;
     this.camera.add(this.armGroup);
     this.scene.add(this.camera);
   }

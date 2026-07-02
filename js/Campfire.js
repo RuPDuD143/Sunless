@@ -1,7 +1,7 @@
 // js/Campfire.js
 // Visual + lifespan logic for a single campfire. The MAIN campfire is
 // eternal (infinite fuel). Player-built campfires start with a 10-minute
-// lifespan (granted by the 12-log build cost) and gain +45s per extra log.
+// lifespan (granted by the 10-log build cost) and gain +45s per extra log.
 
 import * as THREE from "three";
 import { MAIN_FIRE_RADIUS } from "./LightNetwork.js";
